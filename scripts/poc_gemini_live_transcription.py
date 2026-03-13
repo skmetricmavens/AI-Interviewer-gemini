@@ -197,7 +197,7 @@ async def main() -> None:
     # GeminiLive in TEXT mode
     gemini = GeminiLiveLLMService(
         api_key=google_api_key,
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash-native-audio-preview-12-2025",
         system_instruction=(
             "You are conducting a short interview about the person's work and interests. "
             "Ask follow-up questions that reference what they said before. "

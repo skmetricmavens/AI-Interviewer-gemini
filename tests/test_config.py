@@ -38,7 +38,7 @@ class TestSettingsDefaults:
 
     def test_gemini_live_model_default(self) -> None:
         s = _make_settings()
-        assert s.gemini_live_model == "gemini-2.0-flash"
+        assert s.gemini_live_model == "gemini-2.5-flash-native-audio-preview-12-2025"
 
     def test_claude_model_default(self) -> None:
         s = _make_settings()
@@ -177,7 +177,7 @@ class TestLoadSettings:
         _valid_env(monkeypatch)
         settings = load_settings()
         # Optional fields should get their defaults
-        assert settings.gemini_live_model == "gemini-2.0-flash"
+        assert settings.gemini_live_model == "gemini-2.5-flash-native-audio-preview-12-2025"
         assert settings.claude_model == "claude-sonnet-4-20250514"
         assert settings.elevenlabs_tts_model == "eleven_turbo_v2_5"
         assert settings.max_latency_ms == 600

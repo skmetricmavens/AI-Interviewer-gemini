@@ -126,7 +126,7 @@ async def main() -> None:
     # GeminiLive in TEXT mode — native STT + LLM, text output only
     gemini = GeminiLiveLLMService(
         api_key=google_api_key,
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash-native-audio-preview-12-2025",
         system_instruction=(
             "You are a helpful assistant. Keep responses short — under 2 sentences. "
             "Be conversational and friendly."

@@ -57,7 +57,7 @@ class Settings:
     anthropic_api_key: str
     elevenlabs_voice_id: str
 
-    gemini_live_model: str = "gemini-2.0-flash"
+    gemini_live_model: str = "gemini-2.5-flash-native-audio-preview-12-2025"
     claude_model: str = "claude-sonnet-4-20250514"
     elevenlabs_tts_model: str = "eleven_turbo_v2_5"
     max_latency_ms: int = 600
