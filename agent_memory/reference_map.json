@@ -1,0 +1,43 @@
+{
+  "modules": {
+    "src": {
+      "config": ["Settings", "load_settings", "ContentPillar", "TargetAudience", "OutputArchitecture"]
+    },
+    "src.interview": {
+      "prompts": ["build_system_prompt", "INTERVIEW_RULES", "PHASE_DEFINITIONS", "PILLAR_QUESTIONS"],
+      "pipecat_bot": ["InterviewBot", "AUDIO_IN_SAMPLE_RATE", "AUDIO_OUT_SAMPLE_RATE", "build_greeting"],
+      "fillers": ["FILLER_PHRASES", "get_random_filler", "FillerProcessor"],
+      "latency_logger": ["LatencyLogger"],
+      "echo_suppressor": ["EchoSuppressor"],
+      "mic_muter": ["MicMuter"],
+      "prep": ["InterviewPrep", "QuestionGenerator", "write_prep_file", "parse_prep_file"]
+    },
+    "src.writing": {
+      "humanizer": ["ContentHumanizer"],
+      "templates": ["LinkedInPost", "BlogPost", "InvertedPyramidArticle", "NarrativeArcArticle", "PillarClusterArticle", "CTA_PATTERNS", "format_instructions"],
+      "blueprint": ["BlueprintSection", "ArticleBlueprint", "BlueprintGenerator"]
+    },
+    "src.storage": {
+      "db": ["SessionStore"],
+      "exporter": ["TranscriptExporter"]
+    },
+    "src.persona": {
+      "analyzer": ["PersonaAnalyzer", "AI_VOCABULARY_BLOCKLIST"]
+    },
+    "src.topics": {
+      "evergreen": ["EVERGREEN_TOPICS", "get_topics", "get_all_topics"],
+      "generator": ["TopicGenerator"]
+    }
+  },
+  "app": {
+    "app": ["app", "interview", "write", "persona_analyze", "sessions_list", "blueprint", "export", "topics", "prepare"]
+  },
+  "public_api": {
+    "app": ["app"]
+  },
+  "cross_module_deps": {
+    "src.interview.pipecat_bot": ["src.interview.echo_suppressor", "src.interview.fillers", "src.interview.latency_logger", "src.interview.mic_muter", "src.interview.prompts"],
+    "src.writing.humanizer": ["src.writing.templates"],
+    "src.topics.generator": ["src.topics.evergreen"]
+  }
+}

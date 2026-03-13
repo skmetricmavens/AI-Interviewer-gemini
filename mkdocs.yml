@@ -1,0 +1,50 @@
+site_name: AI Content Interviewer
+site_description: Voice-first CLI tool for conducting interviews and generating human-sounding content
+repo_url: https://github.com/skmetricmavens/AI-Interviewer
+repo_name: skmetricmavens/AI-Interviewer
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.expand
+    - toc.integrate
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - def_list
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Configuration: getting-started/configuration.md
+      - Quick Start: getting-started/quickstart.md
+  - How It Works:
+      - Architecture: how-it-works/architecture.md
+      - Interview Engine: how-it-works/interview-engine.md
+      - Content Pipeline: how-it-works/content-pipeline.md
+      - Interview Preparation: how-it-works/interview-prep.md
+  - CLI Reference: cli-reference.md

@@ -1,0 +1,298 @@
+project_name: ai-interviewer
+version: 0.1.0
+last_updated: '2026-03-08'
+
+# Classes in your project
+# Claude will update this as code is written
+classes:
+  ContentPillar:
+    name: ContentPillar
+    file_path: src/config.py
+    methods: []
+    attributes: [connected_journey, crm_intelligence, building_smart, people_not_prompts, field_notes]
+    bases: [StrEnum]
+    docstring: "MetricMavens content pillar categories"
+
+  TargetAudience:
+    name: TargetAudience
+    file_path: src/config.py
+    methods: []
+    attributes: [crm_managers, performance_marketers, marketing_leaders, c_suite]
+    bases: [StrEnum]
+    docstring: "Target audience segments for content"
+
+  OutputArchitecture:
+    name: OutputArchitecture
+    file_path: src/config.py
+    methods: []
+    attributes: [inverted_pyramid, narrative_arc, pillar_cluster]
+    bases: [StrEnum]
+    docstring: "Article architecture types for content output"
+
+  Settings:
+    name: Settings
+    file_path: src/config.py
+    methods: [validate, get_tts_params]
+    attributes: [deepgram_api_key, google_api_key, elevenlabs_api_key, anthropic_api_key, elevenlabs_voice_id, gemini_model, claude_model, deepgram_language, deepgram_model, elevenlabs_tts_model, max_latency_ms, db_path, vad_stop_secs, vad_confidence, elevenlabs_stability, elevenlabs_similarity_boost, elevenlabs_style, elevenlabs_stability_nl, elevenlabs_similarity_boost_nl, elevenlabs_style_nl, echo_similarity_threshold, echo_suppress_window_secs, echo_min_length, echo_trailing_window_secs]
+    bases: []
+    docstring: "Application settings loaded from environment variables"
+
+  SessionStore:
+    name: SessionStore
+    file_path: src/storage/db.py
+    methods: [connect, close, create_session, end_session, add_transcript_entry, get_session_transcript, get_session_metadata, list_sessions]
+    attributes: [db_path, _conn]
+    bases: []
+    docstring: "Async SQLite storage for sessions and transcripts"
+
+  InterviewBot:
+    name: InterviewBot
+    file_path: src/interview/pipecat_bot.py
+    methods: [start_session, run, stop_session, _build_pipeline, _on_user_transcript, _on_assistant_transcript]
+    attributes: [settings, store, _session_id, _pipeline, _task, _transport]
+    bases: []
+    docstring: "Orchestrates a Pipecat voice pipeline for conducting interviews"
+
+  PersonaAnalyzer:
+    name: PersonaAnalyzer
+    file_path: src/persona/analyzer.py
+    methods: [analyze_samples, save_fingerprint, load_fingerprint, _read_samples, _build_analysis_prompt]
+    attributes: [anthropic_api_key]
+    bases: []
+    docstring: "Analyzes writing samples to extract a linguistic fingerprint"
+
+  LinkedInPost:
+    name: LinkedInPost
+    file_path: src/writing/templates.py
+    methods: []
+    attributes: [hook, body, cta, max_chars]
+    bases: []
+    docstring: "LinkedIn post format"
+
+  BlogPost:
+    name: BlogPost
+    file_path: src/writing/templates.py
+    methods: []
+    attributes: [title, intro, sections, conclusion]
+    bases: []
+    docstring: "Blog post format"
+
+  ContentHumanizer:
+    name: ContentHumanizer
+    file_path: src/writing/humanizer.py
+    methods: [generate, _build_prompt]
+    attributes: [anthropic_api_key, model]
+    bases: []
+    docstring: "Generates humanized content from interview transcripts using Claude"
+
+  FillerProcessor:
+    name: FillerProcessor
+    file_path: src/interview/fillers.py
+    methods: [process_frame, cleanup]
+    attributes: [language, timeout_secs]
+    bases: [FrameProcessor]
+    docstring: "Injects a filler phrase when LLM response is slow"
+
+  MicMuter:
+    name: MicMuter
+    file_path: src/interview/mic_muter.py
+    methods: [process_frame, _in_trailing_window]
+    attributes: [_trailing_secs, _bot_speaking, _bot_stopped_at]
+    bases: [FrameProcessor]
+    docstring: "Drops audio input frames while the bot is speaking"
+
+  EchoSuppressor:
+    name: EchoSuppressor
+    file_path: src/interview/echo_suppressor.py
+    methods: [record_bot_utterance, is_echo, process_frame, _in_trailing_window]
+    attributes: [_threshold, _window_secs, _min_length, _trailing_secs, _bot_utterances, _bot_speaking, _bot_stopped_at]
+    bases: [FrameProcessor]
+    docstring: "Drops transcription frames that match recent bot speech"
+
+  BlueprintSection:
+    name: BlueprintSection
+    file_path: src/writing/blueprint.py
+    methods: []
+    attributes: [title, key_points, source_quotes]
+    bases: []
+    docstring: "A section within an article blueprint"
+
+  ArticleBlueprint:
+    name: ArticleBlueprint
+    file_path: src/writing/blueprint.py
+    methods: [to_markdown]
+    attributes: [headline, architecture, sections, target_audience, content_pillar, estimated_word_count, language]
+    bases: []
+    docstring: "A complete article blueprint with metadata"
+
+  BlueprintGenerator:
+    name: BlueprintGenerator
+    file_path: src/writing/blueprint.py
+    methods: [generate, _build_prompt]
+    attributes: [api_key, model]
+    bases: []
+    docstring: "Generates article blueprints from interview transcripts using Claude"
+
+  TranscriptExporter:
+    name: TranscriptExporter
+    file_path: src/storage/exporter.py
+    methods: [to_markdown, to_plain_text, to_json, save]
+    attributes: []
+    bases: []
+    docstring: "Exports interview transcripts to markdown, plain text, or JSON"
+
+  TopicGenerator:
+    name: TopicGenerator
+    file_path: src/topics/generator.py
+    methods: [suggest, _build_prompt]
+    attributes: [api_key, model]
+    bases: []
+    docstring: "Suggests interview topics based on content pillars using Claude"
+
+  InterviewPrep:
+    name: InterviewPrep
+    file_path: src/interview/prep.py
+    methods: []
+    attributes: [topic, pillar, audience, architecture, language, interviewee, questions, notes]
+    bases: []
+    docstring: "Interview preparation data with topic, metadata, questions, and notes"
+
+  QuestionGenerator:
+    name: QuestionGenerator
+    file_path: src/interview/prep.py
+    methods: [generate, _build_prompt]
+    attributes: [api_key, model]
+    bases: []
+    docstring: "Generates interview questions for a topic using Claude"
+
+functions:
+  get_random_filler:
+    name: get_random_filler
+    file_path: src/interview/fillers.py
+    signature: "(language: str) -> str"
+    is_async: false
+    docstring: "Return a random filler phrase for the given language"
+
+  build_greeting:
+    name: build_greeting
+    file_path: src/interview/pipecat_bot.py
+    signature: "(topic: str, language: str) -> str"
+    is_async: false
+    docstring: "Build a casual, warm greeting for the interview opener"
+
+  build_system_prompt:
+    name: build_system_prompt
+    file_path: src/interview/prompts.py
+    signature: "(topic: str, context: str | None, language: str, *, interviewee_name: str | None = None, content_pillar: str | None = None, target_architecture: str | None = None, target_audience: str | None = None, prepared_questions: list[str] | None = None) -> str"
+    is_async: false
+    docstring: "Build the system prompt for the Gemini interviewer"
+
+  format_instructions:
+    name: format_instructions
+    file_path: src/writing/templates.py
+    signature: "(format_type: str) -> str"
+    is_async: false
+    docstring: "Return Claude-ready formatting rules for the given format type"
+
+  load_settings:
+    name: load_settings
+    file_path: src/config.py
+    signature: "() -> Settings"
+    is_async: false
+    docstring: "Load settings from environment variables (.env file)"
+
+  write_prep_file:
+    name: write_prep_file
+    file_path: src/interview/prep.py
+    signature: "(prep: InterviewPrep, path: str) -> None"
+    is_async: false
+    docstring: "Write an InterviewPrep to a markdown file with YAML-style frontmatter"
+
+  parse_prep_file:
+    name: parse_prep_file
+    file_path: src/interview/prep.py
+    signature: "(path: str) -> InterviewPrep"
+    is_async: false
+    docstring: "Parse a markdown prep file into an InterviewPrep"
+
+  interview:
+    name: interview
+    file_path: app.py
+    signature: "(topic: str, context: str | None, language: str, interviewee: str | None, pillar: str | None, architecture: str | None, audience: str | None, prep: str | None) -> None"
+    is_async: false
+    docstring: "Start a voice interview session"
+
+  prepare:
+    name: prepare
+    file_path: app.py
+    signature: "(topic: str, pillar: str | None, audience: str | None, architecture: str | None, language: str, interviewee: str | None, suggest: bool, output_dir: str) -> None"
+    is_async: false
+    docstring: "Create an interview preparation file with questions"
+
+  write:
+    name: write
+    file_path: app.py
+    signature: "(session_id: str, format: str, language: str) -> None"
+    is_async: false
+    docstring: "Generate content from a past interview session"
+
+  persona_analyze:
+    name: persona_analyze
+    file_path: app.py
+    signature: "(samples_dir: str, output: str) -> None"
+    is_async: false
+    docstring: "Analyze writing samples and generate a style fingerprint"
+
+  sessions_list:
+    name: sessions_list
+    file_path: app.py
+    signature: "() -> None"
+    is_async: false
+    docstring: "List past interview sessions"
+
+  blueprint:
+    name: blueprint
+    file_path: app.py
+    signature: "(session_id: str, architecture: str, pillar: str | None, audience: str | None, language: str) -> None"
+    is_async: false
+    docstring: "Generate an article blueprint from a past interview session"
+
+  export:
+    name: export
+    file_path: app.py
+    signature: "(session_id: str, output_dir: str, format: str) -> None"
+    is_async: false
+    docstring: "Export a session transcript to a file"
+
+  topics:
+    name: topics
+    file_path: app.py
+    signature: "(pillar: str, count: int, language: str, suggest: bool) -> None"
+    is_async: false
+    docstring: "List or suggest interview topics for a content pillar"
+
+  get_topics:
+    name: get_topics
+    file_path: src/topics/evergreen.py
+    signature: "(pillar: str) -> list[str]"
+    is_async: false
+    docstring: "Return evergreen topics for a given content pillar"
+
+  get_all_topics:
+    name: get_all_topics
+    file_path: src/topics/evergreen.py
+    signature: "() -> dict[str, list[str]]"
+    is_async: false
+    docstring: "Return the full evergreen topic bank"
+
+# Project invariants - rules that must always be true
+invariants:
+  - "All functions must have type hints"
+  - "All public functions must have docstrings"
+  - "Tests must pass before merging"
+
+# Actions that are forbidden
+forbidden_actions:
+  - "Do not commit without running tests"
+  - "Do not modify memory files manually (Claude manages these)"
+  - "Do not skip code review"

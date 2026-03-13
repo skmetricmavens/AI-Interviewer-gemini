@@ -1,0 +1,43 @@
+[project]
+name = "ai-interviewer"
+version = "0.1.0"
+description = "Voice-first CLI tool that conducts interviews and generates human-sounding content"
+requires-python = ">=3.11"
+dependencies = [
+    "pipecat-ai[deepgram,google,elevenlabs,local,silero]",
+    "deepgram-sdk",
+    "google-generativeai",
+    "anthropic",
+    "elevenlabs",
+    "typer",
+    "rich",
+    "python-dotenv",
+    "aiosqlite",
+    "certifi",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "mypy",
+    "ruff",
+]
+
+[project.scripts]
+ai-interviewer = "app:app"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

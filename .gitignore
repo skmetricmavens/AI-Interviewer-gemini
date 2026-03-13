@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+*.db
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+agent_memory/.build_logs/
+agent_memory/.session_state/
+.claude/settings.local.json

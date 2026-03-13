@@ -1,0 +1,478 @@
+{
+  "current_task_id": null,
+  "backlog": [
+    {
+      "id": "task-1",
+      "title": "Project scaffolding & dependencies",
+      "status": "completed",
+      "priority": "high",
+      "files": ["pyproject.toml"],
+      "dependencies": []
+    },
+    {
+      "id": "task-2",
+      "title": "Configuration & environment management",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/config.py"],
+      "dependencies": ["task-1"]
+    },
+    {
+      "id": "task-3",
+      "title": "SQLite storage for sessions & transcripts",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/storage/db.py"],
+      "dependencies": ["task-2"]
+    },
+    {
+      "id": "task-4",
+      "title": "Interview system prompts (bilingual)",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prompts.py"],
+      "dependencies": ["task-2"]
+    },
+    {
+      "id": "task-5",
+      "title": "Pipecat voice pipeline (STT->LLM->TTS)",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-3", "task-4"]
+    },
+    {
+      "id": "task-6",
+      "title": "Persona analyzer & fingerprinting",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/persona/analyzer.py"],
+      "dependencies": ["task-2"]
+    },
+    {
+      "id": "task-7",
+      "title": "Content humanizer (Claude integration)",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/writing/humanizer.py"],
+      "dependencies": ["task-3", "task-6"]
+    },
+    {
+      "id": "task-8",
+      "title": "Output format templates (LinkedIn, Blog)",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/writing/templates.py"],
+      "dependencies": ["task-7"]
+    },
+    {
+      "id": "task-9",
+      "title": "Typer CLI entrypoint",
+      "status": "completed",
+      "priority": "high",
+      "files": ["app.py"],
+      "dependencies": ["task-5", "task-8"]
+    },
+    {
+      "id": "task-10",
+      "title": "README & project documentation",
+      "status": "completed",
+      "priority": "low",
+      "files": ["README.md"],
+      "dependencies": ["task-9"]
+    },
+    {
+      "id": "fix-1",
+      "title": "SSL cert fix for NLTK on macOS",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/config.py"],
+      "dependencies": []
+    },
+    {
+      "id": "fix-2",
+      "title": "Wire LocalAudioTransport in pipecat_bot.py",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["fix-1"]
+    },
+    {
+      "id": "task-11",
+      "title": "Conversational tone + response length control in prompts",
+      "description": "Add rules: always use contractions, casual reactions, varied acknowledgments. CRITICAL: add hard response length limit (under 30 words for reactions, under 50 for questions). Remove any instruction that encourages verbose responses. Handle fillers via audio (task-15), not prompt.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prompts.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-12",
+      "title": "Warm up greetings and vary by language",
+      "description": "Replace formal greetings with casual podcast-host style openers. Make them sound like a real person starting a conversation, not a robot announcing a topic.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-11"]
+    },
+    {
+      "id": "task-13",
+      "title": "ElevenLabs voice tuning + bilingual prosody switching",
+      "description": "Add stability/similarity_boost/style settings to config. Apply language-specific params in pipeline (NL: higher stability for guttural g/ch sounds, EN: higher style exaggeration). Pass params to ElevenLabsTTSService.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/config.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-14",
+      "title": "Tune VAD silence threshold for faster turn-taking",
+      "description": "Lower SileroVAD min_silence_duration_ms to 250-300ms for faster turn-taking. Add vad_min_silence_ms to Settings for easy tuning without code changes.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-13"]
+    },
+    {
+      "id": "task-15",
+      "title": "Build interstitial filler system",
+      "description": "Create a pipeline processor that plays pre-cached bilingual filler audio when LLM latency exceeds 400ms. Filler library: EN ('Hmm interesting...', 'Right...', 'Got it...') and NL ('Even kijken...', 'Helder...', 'Hm-hm...'). Skip filler if LLM responds within threshold. Randomize to avoid repetition.",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/interview/fillers.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-16",
+      "title": "Verify streaming behavior and optimize if needed",
+      "description": "Profile actual latency breakdown: VAD end → STT result → LLM first token → TTS first audio. Check if Pipecat's sentence-level aggregation is the bottleneck. Only build a sub-sentence chunker if data shows it's needed. Document findings.",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-14"]
+    },
+    {
+      "id": "task-17",
+      "title": "Wire fillers into pipeline + end-to-end test",
+      "description": "Insert filler processor into the Pipecat pipeline. Update _build_pipeline processor order. Manual end-to-end testing with both EN and NL to verify naturalness.",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-12", "task-14", "task-15", "task-16"]
+    },
+    {
+      "id": "task-18",
+      "title": "Investigate local echo cancellation (no external service)",
+      "description": "Find a local/free AEC solution that doesn't add API costs. Options: speexdsp, WebRTC AEC via pyaudio, or OS-level echo cancellation. Must work without headphones.",
+      "status": "deferred",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-17"]
+    },
+    {
+      "id": "task-19",
+      "title": "Remove forced reaction starters from interview prompts",
+      "description": "Remove the 'Start every response with a brief, natural reaction' rule and its example lists from INTERVIEW_RULES. Replace with lighter guidance: 'React naturally — don't force filler phrases.' Update tests in test_prompts.py that assert on reaction starter content.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prompts.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-20",
+      "title": "Add echo suppression settings to config",
+      "description": "Add three settings to Settings: echo_similarity_threshold (float, default 0.6), echo_suppress_window_secs (float, default 8.0), echo_min_length (int, default 3). These control the EchoSuppressor behavior.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/config.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-21",
+      "title": "Build EchoSuppressor FrameProcessor",
+      "description": "Create EchoSuppressor(FrameProcessor) in src/interview/echo_suppressor.py. Tracks recent bot utterances via TTSTextFrame. On incoming TranscriptionFrame, compares text against recent bot utterances using difflib.SequenceMatcher. Drops frames above similarity threshold within time window. Handles partial matches. Uses bounded deque. Logs suppressed frames.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/echo_suppressor.py"],
+      "dependencies": ["task-20"]
+    },
+    {
+      "id": "task-22",
+      "title": "Wire EchoSuppressor into pipeline",
+      "description": "Import and instantiate EchoSuppressor in _build_pipeline. Insert between STT and user context aggregator: input → vad → stt → echo_suppressor → user_agg → latency → llm → tts → output → assistant_agg. Pass config values from Settings. Register bot utterance capture.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-19", "task-20", "task-21"]
+    },
+    {
+      "id": "task-23",
+      "title": "Add bot-speaking-state suppression to EchoSuppressor",
+      "description": "Enhance EchoSuppressor to track bot speaking state via BotStartedSpeakingFrame/BotStoppedSpeakingFrame. When bot is speaking, suppress ALL incoming TranscriptionFrames (no text matching needed). Add a configurable trailing window (default 1.5s) after BotStoppedSpeakingFrame to catch trailing echoes. Keep existing text-similarity matching as a fallback for edge cases. Import BotStartedSpeakingFrame and BotStoppedSpeakingFrame from pipecat.frames.frames.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/echo_suppressor.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-24",
+      "title": "Add echo trailing window config + lower min_length default",
+      "description": "Add echo_trailing_window_secs (float, default 1.5) to Settings dataclass. Lower echo_min_length default from 3 to 1. The trailing window controls how long after the bot stops speaking to keep suppressing transcriptions.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/config.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-25",
+      "title": "Wire trailing window config into pipeline",
+      "description": "Pass settings.echo_trailing_window_secs to EchoSuppressor constructor in _build_pipeline. Update the EchoSuppressor instantiation to include the new trailing_secs parameter. BotStartedSpeakingFrame/BotStoppedSpeakingFrame already propagate upstream from transport.output() to reach echo_suppressor.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-23", "task-24"]
+    },
+    {
+      "id": "task-26",
+      "title": "Build MicMuter FrameProcessor to mute mic during bot speech",
+      "description": "Create MicMuter(FrameProcessor) in src/interview/mic_muter.py. Tracks bot speaking state via BotStartedSpeakingFrame/BotStoppedSpeakingFrame. Drops InputAudioRawFrame while bot is speaking + configurable trailing window. This prevents VAD from detecting speaker echo as user speech. Must sit before VAD in the pipeline.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/mic_muter.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-27",
+      "title": "Wire MicMuter into pipeline before VAD",
+      "description": "Insert MicMuter between transport.input() and VAD in _build_pipeline. Pipeline order: input -> mic_muter -> vad -> stt -> echo_suppressor -> user_agg -> llm -> tts -> output -> assistant_agg. Pass trailing_secs from settings.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-26"]
+    },
+    {
+      "id": "task-28",
+      "title": "Add ContentPillar, TargetAudience, OutputArchitecture enums",
+      "description": "Add three string enums to src/config.py: ContentPillar, TargetAudience, OutputArchitecture.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/config.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-29",
+      "title": "Schema migration for session metadata columns",
+      "description": "Add nullable columns to sessions table: interviewee_name, content_pillar, target_architecture, target_audience. Update create_session() to accept new params. Add get_session_metadata() method.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/storage/db.py"],
+      "dependencies": ["task-28"]
+    },
+    {
+      "id": "task-30",
+      "title": "Add CLI interview options for metadata",
+      "status": "completed",
+      "priority": "high",
+      "files": ["app.py"],
+      "dependencies": ["task-29"]
+    },
+    {
+      "id": "task-31",
+      "title": "Pass metadata through InterviewBot.start_session",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-29", "task-30"]
+    },
+    {
+      "id": "task-32",
+      "title": "Update build_system_prompt for metadata",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prompts.py"],
+      "dependencies": ["task-31"]
+    },
+    {
+      "id": "task-33",
+      "title": "Define PHASE_DEFINITIONS data structure",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prompts.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-34",
+      "title": "Inject six-phase structure into system prompt",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prompts.py"],
+      "dependencies": ["task-32", "task-33"]
+    },
+    {
+      "id": "task-35",
+      "title": "Add pillar-specific question banks",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/interview/prompts.py"],
+      "dependencies": ["task-34"]
+    },
+    {
+      "id": "task-36",
+      "title": "Add Inverted Pyramid article template",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/writing/templates.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-37",
+      "title": "Add Narrative Arc article template",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/writing/templates.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-38",
+      "title": "Add Pillar-Cluster template + CTA patterns",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/writing/templates.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-39",
+      "title": "Update humanizer for new architectures",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/writing/humanizer.py", "app.py"],
+      "dependencies": ["task-36", "task-37", "task-38"]
+    },
+    {
+      "id": "task-40",
+      "title": "Create blueprint data models",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/writing/blueprint.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-41",
+      "title": "Build BlueprintGenerator + markdown renderer",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/writing/blueprint.py"],
+      "dependencies": ["task-40"]
+    },
+    {
+      "id": "task-42",
+      "title": "Add blueprint CLI command",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["app.py"],
+      "dependencies": ["task-41", "task-29"]
+    },
+    {
+      "id": "task-43",
+      "title": "Create TranscriptExporter class",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/storage/exporter.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-44",
+      "title": "Add export save logic with naming convention",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["src/storage/exporter.py"],
+      "dependencies": ["task-43"]
+    },
+    {
+      "id": "task-45",
+      "title": "Add export CLI command",
+      "status": "completed",
+      "priority": "medium",
+      "files": ["app.py"],
+      "dependencies": ["task-43", "task-44", "task-29"]
+    },
+    {
+      "id": "task-46",
+      "title": "Create evergreen topic bank",
+      "status": "completed",
+      "priority": "low",
+      "files": ["src/topics/evergreen.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-47",
+      "title": "Build TopicGenerator class",
+      "status": "completed",
+      "priority": "low",
+      "files": ["src/topics/generator.py"],
+      "dependencies": ["task-46", "task-28"]
+    },
+    {
+      "id": "task-48",
+      "title": "Add topics CLI command",
+      "status": "completed",
+      "priority": "low",
+      "files": ["app.py"],
+      "dependencies": ["task-47"]
+    },
+    {
+      "id": "task-49",
+      "title": "Create InterviewPrep dataclass and markdown parser",
+      "description": "Create src/interview/prep.py with: InterviewPrep dataclass (topic, pillar, audience, architecture, language, interviewee, questions: list[str], notes: str). Add parse_prep_file(path) -> InterviewPrep that reads markdown with YAML-style frontmatter. Add write_prep_file(prep, path) that writes the markdown. Use simple string parsing (no pyyaml dep).",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prep.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-50",
+      "title": "Build QuestionGenerator with Claude",
+      "description": "Add QuestionGenerator class to src/interview/prep.py. generate(topic, pillar, audience, language, count=8) -> list[str]. Uses Claude to generate contextual interview questions. _build_prompt() includes PILLAR_QUESTIONS as examples. Returns a list of question strings.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prep.py"],
+      "dependencies": ["task-49"]
+    },
+    {
+      "id": "task-51",
+      "title": "Add prepare CLI command with topic selection",
+      "description": "Add 'prepare' command to app.py. Two modes: (A) --topic provided directly, (B) --pillar without --topic shows interactive numbered list from evergreen bank (+ AI-suggested if --suggest). Options: --topic, --pillar, --audience, --architecture, --language, --interviewee, --suggest, --output-dir (default 'interviews'). Generates questions via QuestionGenerator, writes interviews/<slug>.md. Uses get_topics() for listing and TopicGenerator for suggestions.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["app.py"],
+      "dependencies": ["task-50"]
+    },
+    {
+      "id": "task-52",
+      "title": "Update build_system_prompt for prepared questions",
+      "description": "Add optional prepared_questions: list[str] | None parameter to build_system_prompt(). When provided, add '## Prepared Questions' section with instructions to use as interview guide. Takes priority over PILLAR_QUESTIONS when present.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/prompts.py"],
+      "dependencies": []
+    },
+    {
+      "id": "task-53",
+      "title": "Pass prepared_questions through InterviewBot",
+      "description": "Update InterviewBot.start_session() and _build_pipeline() to accept and forward prepared_questions: list[str] | None to build_system_prompt().",
+      "status": "completed",
+      "priority": "high",
+      "files": ["src/interview/pipecat_bot.py"],
+      "dependencies": ["task-52"]
+    },
+    {
+      "id": "task-54",
+      "title": "Wire --prep flag into interview CLI command",
+      "description": "Add --prep option to interview CLI (Optional[str], path to prep file). When provided: parse with parse_prep_file(), use metadata as defaults (CLI flags override), pass prepared_questions through to InterviewBot. Show 'Prep file: <path>' in the info panel.",
+      "status": "completed",
+      "priority": "high",
+      "files": ["app.py"],
+      "dependencies": ["task-49", "task-53"]
+    }
+  ]
+}
