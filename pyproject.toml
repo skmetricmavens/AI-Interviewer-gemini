@@ -4,9 +4,8 @@ version = "0.1.0"
 description = "Voice-first CLI tool that conducts interviews and generates human-sounding content"
 requires-python = ">=3.11"
 dependencies = [
-    "pipecat-ai[deepgram,google,elevenlabs,local,silero]",
-    "deepgram-sdk",
-    "google-generativeai",
+    "pipecat-ai[google,elevenlabs,local]",
+    "google-genai",
     "anthropic",
     "elevenlabs",
     "typer",

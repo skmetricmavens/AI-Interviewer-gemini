@@ -1,21 +1,31 @@
-"""Pipecat voice pipeline for conducting AI interviews."""
+"""Pipecat voice pipeline for conducting AI interviews.
+
+Uses GeminiLiveLLMService for native STT + LLM in a single WebSocket,
+with ElevenLabs TTS for high-quality custom voice output.
+"""
 
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import TYPE_CHECKING
 
-from pipecat.audio.vad.silero import SileroVADAnalyzer
-from pipecat.audio.vad.vad_analyzer import VADParams
-from pipecat.frames.frames import TTSTextFrame
+from pipecat.frames.frames import (
+    EndFrame,
+    LLMTextFrame,
+    TranscriptionFrame,
+    TTSTextFrame,
+)
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.processors.aggregators.llm_context import LLMContext
-from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
-from pipecat.processors.audio.vad_processor import VADProcessor
-from pipecat.services.deepgram.stt import DeepgramSTTService
+from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
-from pipecat.services.google.llm import GoogleLLMService
+from pipecat.services.google.gemini_live.llm import (
+    GeminiLiveLLMService,
+    GeminiModalities,
+    InputParams,
+)
 from pipecat.transports.local.audio import LocalAudioTransport, LocalAudioTransportParams
 
 from src.interview.echo_suppressor import EchoSuppressor
@@ -24,11 +34,20 @@ from src.interview.mic_muter import MicMuter
 from src.interview.prompts import build_system_prompt
 
 if TYPE_CHECKING:
+    from pipecat.frames.frames import Frame
+
     from src.config import Settings
     from src.storage.db import SessionStore
 
-AUDIO_IN_SAMPLE_RATE = 16000
-AUDIO_OUT_SAMPLE_RATE = 24000
+logger = logging.getLogger("ai_interviewer.bot")
+
+# GeminiLive uses 24kHz for audio I/O
+AUDIO_SAMPLE_RATE = 24000
+
+# Session timer thresholds (seconds)
+SESSION_WARN_SECS = 14 * 60  # 14 min — warn interviewer
+SESSION_WRAPUP_SECS = 14.5 * 60  # 14:30 — start wrap-up
+SESSION_DISCONNECT_SECS = 14 * 60 + 55  # 14:55 — disconnect
 
 
 def build_greeting(topic: str, language: str) -> str:
@@ -44,6 +63,57 @@ def build_greeting(topic: str, language: str) -> str:
     if language == "nl":
         return f"Hey, leuk dat je er bent! We duiken in {topic}. Wat houdt je bezig?"
     return f"Hey, great to have you! Let's talk about {topic}. What's on your mind?"
+
+
+class TranscriptCollector(FrameProcessor):
+    """Captures TranscriptionFrame (user) and LLMTextFrame (assistant) for persistence.
+
+    GeminiLive emits TranscriptionFrame for user speech transcription and
+    LLMTextFrame for assistant text output (in TEXT mode). This processor
+    captures both and forwards them to the session store.
+    """
+
+    def __init__(
+        self,
+        *,
+        on_user_transcript: object,
+        on_assistant_transcript: object,
+        echo_suppressor: EchoSuppressor,
+    ) -> None:
+        super().__init__()
+        self._on_user_transcript = on_user_transcript
+        self._on_assistant_transcript = on_assistant_transcript
+        self._echo_suppressor = echo_suppressor
+        self._current_assistant_text: list[str] = []
+        self._collecting_assistant: bool = False
+
+    async def process_frame(self, frame: Frame, direction: FrameDirection) -> None:
+        await super().process_frame(frame, direction)
+
+        if isinstance(frame, TranscriptionFrame):
+            # User speech transcription from GeminiLive
+            if self._on_user_transcript and frame.text.strip():
+                await self._on_user_transcript(frame.text)  # type: ignore[operator]
+
+        elif isinstance(frame, LLMTextFrame):
+            # Collect assistant text chunks
+            self._collecting_assistant = True
+            self._current_assistant_text.append(frame.text)
+
+        elif isinstance(frame, TTSTextFrame):
+            # TTSTextFrame signals a complete sentence going to TTS
+            # Record it for echo suppression
+            self._echo_suppressor.record_bot_utterance(frame.text)
+
+        # Flush assistant text on non-text frames if we were collecting
+        if self._collecting_assistant and not isinstance(frame, LLMTextFrame):
+            full_text = "".join(self._current_assistant_text).strip()
+            if full_text and self._on_assistant_transcript:
+                await self._on_assistant_transcript(full_text)  # type: ignore[operator]
+            self._current_assistant_text = []
+            self._collecting_assistant = False
+
+        await self.push_frame(frame, direction)
 
 
 class InterviewBot:
@@ -138,7 +208,7 @@ class InterviewBot:
         target_audience: str | None = None,
         prepared_questions: list[str] | None = None,
     ) -> None:
-        """Construct the Pipecat pipeline with local audio transport."""
+        """Construct the Pipecat pipeline with Gemini Live + ElevenLabs."""
         system_prompt = build_system_prompt(
             topic,
             context_text,
@@ -154,35 +224,25 @@ class InterviewBot:
         self._transport = LocalAudioTransport(
             LocalAudioTransportParams(
                 audio_in_enabled=True,
-                audio_in_sample_rate=AUDIO_IN_SAMPLE_RATE,
+                audio_in_sample_rate=AUDIO_SAMPLE_RATE,
                 audio_out_enabled=True,
-                audio_out_sample_rate=AUDIO_OUT_SAMPLE_RATE,
+                audio_out_sample_rate=AUDIO_SAMPLE_RATE,
             )
         )
 
-        # VAD for interruption handling — tuned for conversational turn-taking
-        vad_params = VADParams(
-            stop_secs=self.settings.vad_stop_secs,
-            confidence=self.settings.vad_confidence,
-        )
-        vad = VADProcessor(
-            vad_analyzer=SileroVADAnalyzer(
-                sample_rate=AUDIO_IN_SAMPLE_RATE,
-                params=vad_params,
-            )
-        )
-
-        # STT, LLM, TTS services
-        stt = DeepgramSTTService(
-            api_key=self.settings.deepgram_api_key,
-        )
-
-        llm = GoogleLLMService(
+        # GeminiLive — native STT + LLM in a single WebSocket
+        # TEXT mode: emits LLMTextFrame for downstream TTS
+        gemini = GeminiLiveLLMService(
             api_key=self.settings.google_api_key,
-            model=self.settings.gemini_model,
+            model=self.settings.gemini_live_model,
             system_instruction=system_prompt,
+            params=InputParams(
+                modalities=GeminiModalities.TEXT,
+                temperature=0.7,
+            ),
         )
 
+        # ElevenLabs TTS — custom voice output
         tts_voice_params = self.settings.get_tts_params(language)
         tts = ElevenLabsTTSService(
             api_key=self.settings.elevenlabs_api_key,
@@ -197,32 +257,6 @@ class InterviewBot:
 
         greeting = build_greeting(topic, language)
 
-        # Context aggregators convert STT transcriptions <-> LLM messages
-        # Seed with system prompt + pre-filled greeting so LLM has context
-        context = LLMContext(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "assistant", "content": greeting},
-            ]
-        )
-        context_aggregator = LLMContextAggregatorPair(context)
-
-        # Wire transcript persistence via aggregator events
-        # User event passes (aggregator, strategy, UserTurnStoppedMessage)
-        # Assistant event passes (aggregator, AssistantTurnStoppedMessage)
-        @context_aggregator.user().event_handler("on_user_turn_stopped")
-        async def on_user_turn(aggregator: object, strategy: object, message: object) -> None:
-            text = getattr(message, "content", None)
-            if text:
-                await self._on_user_transcript(str(text))
-
-        @context_aggregator.assistant().event_handler("on_assistant_turn_stopped")
-        async def on_assistant_turn(aggregator: object, message: object) -> None:
-            text = getattr(message, "content", None)
-            if text:
-                echo_suppressor.record_bot_utterance(str(text))
-                await self._on_assistant_transcript(str(text))
-
         # Echo suppression — prevents bot speech from being transcribed as user input
         echo_suppressor = EchoSuppressor(
             threshold=self.settings.echo_similarity_threshold,
@@ -236,31 +270,35 @@ class InterviewBot:
             trailing_secs=self.settings.echo_trailing_window_secs,
         )
 
-        # Latency logger — measures STT→LLM→TTS timing
+        # Transcript collector — captures user and assistant speech for DB persistence
+        transcript_collector = TranscriptCollector(
+            on_user_transcript=self._on_user_transcript,
+            on_assistant_transcript=self._on_assistant_transcript,
+            echo_suppressor=echo_suppressor,
+        )
+
+        # Latency logger — measures pipeline timing
         latency = LatencyLogger()
 
-        # Pipeline: mic -> mic_muter -> VAD -> STT -> echo_sup -> user_agg -> LLM -> TTS -> out
+        # Pipeline: mic → mic_muter → GeminiLive(TEXT) → echo_sup → transcript → latency → TTS → out
         self._pipeline = Pipeline(
             processors=[
                 self._transport.input(),
                 mic_muter,
-                vad,
-                stt,
+                gemini,
                 echo_suppressor,
-                context_aggregator.user(),
+                transcript_collector,
                 latency,
-                llm,
                 tts,
                 self._transport.output(),
-                context_aggregator.assistant(),
             ]
         )
 
         self._task = PipelineTask(
             pipeline=self._pipeline,
             params=PipelineParams(
-                audio_in_sample_rate=AUDIO_IN_SAMPLE_RATE,
-                audio_out_sample_rate=AUDIO_OUT_SAMPLE_RATE,
+                audio_in_sample_rate=AUDIO_SAMPLE_RATE,
+                audio_out_sample_rate=AUDIO_SAMPLE_RATE,
             ),
         )
 
@@ -269,6 +307,43 @@ class InterviewBot:
         async def on_started(task: PipelineTask, frame: object) -> None:
             echo_suppressor.record_bot_utterance(greeting)
             await task.queue_frame(TTSTextFrame(text=greeting, aggregated_by="SENTENCE"))
+
+        # Session timer — graceful wrap-up before 15-min limit
+        max_secs = self.settings.session_max_minutes * 60
+
+        @self._task.event_handler("on_pipeline_started")
+        async def on_session_timer(task: PipelineTask, frame: object) -> None:
+            await self._session_timer(task, language, max_secs)
+
+    async def _session_timer(self, task: PipelineTask, language: str, max_secs: float) -> None:
+        """Manage session time limits with warnings and graceful shutdown."""
+        warn_secs = min(SESSION_WARN_SECS, max_secs * 0.93)
+        wrapup_secs = min(SESSION_WRAPUP_SECS, max_secs * 0.97)
+        disconnect_secs = min(SESSION_DISCONNECT_SECS, max_secs * 0.99)
+
+        await asyncio.sleep(warn_secs)
+        logger.info("Session approaching time limit — warning issued")
+
+        warn_msg = (
+            "We hebben nog ongeveer een minuut. Laten we afronden."
+            if language == "nl"
+            else "We have about a minute left. Let's wrap up."
+        )
+        await task.queue_frame(TTSTextFrame(text=warn_msg, aggregated_by="SENTENCE"))
+
+        await asyncio.sleep(wrapup_secs - warn_secs)
+        logger.info("Session wrapping up")
+
+        wrapup_msg = (
+            "Bedankt voor het gesprek! Tot de volgende keer."
+            if language == "nl"
+            else "Thanks for the conversation! Until next time."
+        )
+        await task.queue_frame(TTSTextFrame(text=wrapup_msg, aggregated_by="SENTENCE"))
+
+        await asyncio.sleep(disconnect_secs - wrapup_secs)
+        logger.info("Session time limit reached — disconnecting")
+        await task.queue_frame(EndFrame())
 
     async def _on_user_transcript(self, text: str) -> None:
         """Callback for user speech transcription."""

@@ -14,7 +14,6 @@ from src.storage.db import SessionStore
 def settings() -> Settings:
     """Create test settings with dummy API keys."""
     return Settings(
-        deepgram_api_key="test-dg-key",
         google_api_key="test-google-key",
         elevenlabs_api_key="test-el-key",
         anthropic_api_key="test-anthropic-key",
@@ -35,9 +34,7 @@ class TestStartSessionMetadata:
     """Verify start_session forwards metadata to store."""
 
     @pytest.mark.asyncio
-    async def test_passes_metadata_to_store(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_passes_metadata_to_store(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
             session_id = await bot.start_session(
@@ -57,23 +54,17 @@ class TestStartSessionMetadata:
         assert meta["target_audience"] == "marketing_leaders"
 
     @pytest.mark.asyncio
-    async def test_metadata_defaults_none(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_metadata_defaults_none(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
-            session_id = await bot.start_session(
-                topic="Generic", context_text=None, language="en"
-            )
+            session_id = await bot.start_session(topic="Generic", context_text=None, language="en")
         meta = await store.get_session_metadata(session_id)
         assert meta is not None
         assert meta["interviewee_name"] is None
         assert meta["content_pillar"] is None
 
     @pytest.mark.asyncio
-    async def test_partial_metadata(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_partial_metadata(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
             session_id = await bot.start_session(
@@ -88,9 +79,7 @@ class TestStartSessionMetadata:
         assert meta["target_audience"] is None
 
     @pytest.mark.asyncio
-    async def test_returns_valid_uuid(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_returns_valid_uuid(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
             session_id = await bot.start_session(

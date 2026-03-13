@@ -5,7 +5,7 @@
     },
     "src.interview": {
       "prompts": ["build_system_prompt", "INTERVIEW_RULES", "PHASE_DEFINITIONS", "PILLAR_QUESTIONS"],
-      "pipecat_bot": ["InterviewBot", "AUDIO_IN_SAMPLE_RATE", "AUDIO_OUT_SAMPLE_RATE", "build_greeting"],
+      "pipecat_bot": ["InterviewBot", "TranscriptCollector", "AUDIO_SAMPLE_RATE", "SESSION_WARN_SECS", "SESSION_WRAPUP_SECS", "SESSION_DISCONNECT_SECS", "build_greeting"],
       "fillers": ["FILLER_PHRASES", "get_random_filler", "FillerProcessor"],
       "latency_logger": ["LatencyLogger"],
       "echo_suppressor": ["EchoSuppressor"],
@@ -36,7 +36,7 @@
     "app": ["app"]
   },
   "cross_module_deps": {
-    "src.interview.pipecat_bot": ["src.interview.echo_suppressor", "src.interview.fillers", "src.interview.latency_logger", "src.interview.mic_muter", "src.interview.prompts"],
+    "src.interview.pipecat_bot": ["src.interview.echo_suppressor", "src.interview.latency_logger", "src.interview.mic_muter", "src.interview.prompts"],
     "src.writing.humanizer": ["src.writing.templates"],
     "src.topics.generator": ["src.topics.evergreen"]
   }
