@@ -41,7 +41,6 @@ class OutputArchitecture(StrEnum):
 
 
 _REQUIRED_ENV_KEYS = [
-    "DEEPGRAM_API_KEY",
     "GOOGLE_API_KEY",
     "ELEVENLABS_API_KEY",
     "ANTHROPIC_API_KEY",
@@ -53,23 +52,17 @@ _REQUIRED_ENV_KEYS = [
 class Settings:
     """Application settings loaded from environment variables."""
 
-    deepgram_api_key: str
     google_api_key: str
     elevenlabs_api_key: str
     anthropic_api_key: str
     elevenlabs_voice_id: str
 
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_live_model: str = "gemini-2.5-flash-native-audio-preview-12-2025"
     claude_model: str = "claude-sonnet-4-20250514"
-    deepgram_language: str = "multi"
-    deepgram_model: str = "nova-3"
     elevenlabs_tts_model: str = "eleven_turbo_v2_5"
     max_latency_ms: int = 600
     db_path: str = "sessions.db"
-
-    # VAD tuning — lower = faster turn-taking, higher = more patience for pauses
-    vad_stop_secs: float = 0.3
-    vad_confidence: float = 0.7
+    session_max_minutes: float = 15.0
 
     # ElevenLabs voice tuning — English defaults
     elevenlabs_stability: float = 0.5
@@ -124,7 +117,6 @@ def load_settings() -> Settings:
         env_values[key] = value
 
     return Settings(
-        deepgram_api_key=env_values["DEEPGRAM_API_KEY"],
         google_api_key=env_values["GOOGLE_API_KEY"],
         elevenlabs_api_key=env_values["ELEVENLABS_API_KEY"],
         anthropic_api_key=env_values["ANTHROPIC_API_KEY"],

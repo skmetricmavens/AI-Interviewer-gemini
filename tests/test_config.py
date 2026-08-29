@@ -6,7 +6,6 @@ from src.config import Settings, load_settings
 
 # --- Required environment variable names ---
 REQUIRED_ENV_KEYS = [
-    "DEEPGRAM_API_KEY",
     "GOOGLE_API_KEY",
     "ELEVENLABS_API_KEY",
     "ANTHROPIC_API_KEY",
@@ -16,7 +15,6 @@ REQUIRED_ENV_KEYS = [
 
 def _valid_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set all required env vars to realistic fake values."""
-    monkeypatch.setenv("DEEPGRAM_API_KEY", "dg-key-abc123")
     monkeypatch.setenv("GOOGLE_API_KEY", "goog-key-abc123")
     monkeypatch.setenv("ELEVENLABS_API_KEY", "el-key-abc123")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "ant-key-abc123")
@@ -26,7 +24,6 @@ def _valid_env(monkeypatch: pytest.MonkeyPatch) -> None:
 def _make_settings(**overrides: object) -> Settings:
     """Create a Settings instance with minimal required args and optional overrides."""
     defaults = {
-        "deepgram_api_key": "k",
         "google_api_key": "k",
         "elevenlabs_api_key": "k",
         "anthropic_api_key": "k",
@@ -39,75 +36,29 @@ def _make_settings(**overrides: object) -> Settings:
 class TestSettingsDefaults:
     """Verify default field values on the Settings dataclass."""
 
-    def test_gemini_model_default(self) -> None:
-        s = Settings(
-            deepgram_api_key="k",
-            google_api_key="k",
-            elevenlabs_api_key="k",
-            anthropic_api_key="k",
-            elevenlabs_voice_id="v",
-        )
-        assert s.gemini_model == "gemini-2.0-flash"
+    def test_gemini_live_model_default(self) -> None:
+        s = _make_settings()
+        assert s.gemini_live_model == "gemini-2.5-flash-native-audio-preview-12-2025"
 
     def test_claude_model_default(self) -> None:
-        s = Settings(
-            deepgram_api_key="k",
-            google_api_key="k",
-            elevenlabs_api_key="k",
-            anthropic_api_key="k",
-            elevenlabs_voice_id="v",
-        )
+        s = _make_settings()
         assert s.claude_model == "claude-sonnet-4-20250514"
 
-    def test_deepgram_language_default(self) -> None:
-        s = Settings(
-            deepgram_api_key="k",
-            google_api_key="k",
-            elevenlabs_api_key="k",
-            anthropic_api_key="k",
-            elevenlabs_voice_id="v",
-        )
-        assert s.deepgram_language == "multi"
-
-    def test_deepgram_model_default(self) -> None:
-        s = Settings(
-            deepgram_api_key="k",
-            google_api_key="k",
-            elevenlabs_api_key="k",
-            anthropic_api_key="k",
-            elevenlabs_voice_id="v",
-        )
-        assert s.deepgram_model == "nova-3"
-
     def test_elevenlabs_tts_model_default(self) -> None:
-        s = Settings(
-            deepgram_api_key="k",
-            google_api_key="k",
-            elevenlabs_api_key="k",
-            anthropic_api_key="k",
-            elevenlabs_voice_id="v",
-        )
+        s = _make_settings()
         assert s.elevenlabs_tts_model == "eleven_turbo_v2_5"
 
     def test_max_latency_ms_default(self) -> None:
-        s = Settings(
-            deepgram_api_key="k",
-            google_api_key="k",
-            elevenlabs_api_key="k",
-            anthropic_api_key="k",
-            elevenlabs_voice_id="v",
-        )
+        s = _make_settings()
         assert s.max_latency_ms == 600
 
     def test_db_path_default(self) -> None:
-        s = Settings(
-            deepgram_api_key="k",
-            google_api_key="k",
-            elevenlabs_api_key="k",
-            anthropic_api_key="k",
-            elevenlabs_voice_id="v",
-        )
+        s = _make_settings()
         assert s.db_path == "sessions.db"
+
+    def test_session_max_minutes_default(self) -> None:
+        s = _make_settings()
+        assert s.session_max_minutes == 15.0
 
 
 class TestSettingsValidate:
@@ -115,7 +66,6 @@ class TestSettingsValidate:
 
     def test_valid_settings_passes(self) -> None:
         s = Settings(
-            deepgram_api_key="real-key-1",
             google_api_key="real-key-2",
             elevenlabs_api_key="real-key-3",
             anthropic_api_key="real-key-4",
@@ -127,7 +77,6 @@ class TestSettingsValidate:
     @pytest.mark.parametrize(
         "field",
         [
-            "deepgram_api_key",
             "google_api_key",
             "elevenlabs_api_key",
             "anthropic_api_key",
@@ -136,7 +85,6 @@ class TestSettingsValidate:
     )
     def test_empty_api_key_raises(self, field: str) -> None:
         kwargs = {
-            "deepgram_api_key": "real-key",
             "google_api_key": "real-key",
             "elevenlabs_api_key": "real-key",
             "anthropic_api_key": "real-key",
@@ -150,7 +98,6 @@ class TestSettingsValidate:
     @pytest.mark.parametrize(
         "field,placeholder",
         [
-            ("deepgram_api_key", "your-deepgram-api-key"),
             ("google_api_key", "your-google-api-key"),
             ("elevenlabs_api_key", "your-elevenlabs-api-key"),
             ("anthropic_api_key", "your-anthropic-api-key"),
@@ -159,7 +106,6 @@ class TestSettingsValidate:
     )
     def test_placeholder_value_raises(self, field: str, placeholder: str) -> None:
         kwargs = {
-            "deepgram_api_key": "real-key",
             "google_api_key": "real-key",
             "elevenlabs_api_key": "real-key",
             "anthropic_api_key": "real-key",
@@ -173,8 +119,7 @@ class TestSettingsValidate:
     def test_placeholder_prefix_your_dash_raises(self) -> None:
         """Any value starting with 'your-' should be rejected."""
         s = Settings(
-            deepgram_api_key="your-something-else",
-            google_api_key="real-key",
+            google_api_key="your-something-else",
             elevenlabs_api_key="real-key",
             anthropic_api_key="real-key",
             elevenlabs_voice_id="real-voice",
@@ -187,18 +132,13 @@ class TestSettingsCustomValues:
     """Verify that non-default values are stored correctly."""
 
     def test_custom_model_values(self) -> None:
-        s = Settings(
-            deepgram_api_key="k",
-            google_api_key="k",
-            elevenlabs_api_key="k",
-            anthropic_api_key="k",
-            elevenlabs_voice_id="v",
-            gemini_model="gemini-pro",
+        s = _make_settings(
+            gemini_live_model="gemini-pro",
             claude_model="claude-opus-4-20250514",
             max_latency_ms=1000,
             db_path="custom.db",
         )
-        assert s.gemini_model == "gemini-pro"
+        assert s.gemini_live_model == "gemini-pro"
         assert s.claude_model == "claude-opus-4-20250514"
         assert s.max_latency_ms == 1000
         assert s.db_path == "custom.db"
@@ -210,15 +150,12 @@ class TestLoadSettings:
     def test_load_settings_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _valid_env(monkeypatch)
         settings = load_settings()
-        assert settings.deepgram_api_key == "dg-key-abc123"
         assert settings.google_api_key == "goog-key-abc123"
         assert settings.elevenlabs_api_key == "el-key-abc123"
         assert settings.anthropic_api_key == "ant-key-abc123"
         assert settings.elevenlabs_voice_id == "voice-id-abc123"
 
-    def test_load_settings_returns_settings_instance(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_load_settings_returns_settings_instance(self, monkeypatch: pytest.MonkeyPatch) -> None:
         _valid_env(monkeypatch)
         settings = load_settings()
         assert isinstance(settings, Settings)
@@ -240,10 +177,8 @@ class TestLoadSettings:
         _valid_env(monkeypatch)
         settings = load_settings()
         # Optional fields should get their defaults
-        assert settings.gemini_model == "gemini-2.0-flash"
+        assert settings.gemini_live_model == "gemini-2.5-flash-native-audio-preview-12-2025"
         assert settings.claude_model == "claude-sonnet-4-20250514"
-        assert settings.deepgram_language == "multi"
-        assert settings.deepgram_model == "nova-3"
         assert settings.elevenlabs_tts_model == "eleven_turbo_v2_5"
         assert settings.max_latency_ms == 600
         assert settings.db_path == "sessions.db"
@@ -382,26 +317,6 @@ class TestTTSSettings:
             "similarity_boost": 0.75,
             "style": 0.4,
         }
-
-
-class TestVADSettings:
-    """Verify VAD tuning settings on Settings dataclass."""
-
-    def test_vad_stop_secs_default(self) -> None:
-        s = _make_settings()
-        assert s.vad_stop_secs == 0.3
-
-    def test_vad_confidence_default(self) -> None:
-        s = _make_settings()
-        assert s.vad_confidence == 0.7
-
-    def test_vad_stop_secs_custom(self) -> None:
-        s = _make_settings(vad_stop_secs=0.25)
-        assert s.vad_stop_secs == 0.25
-
-    def test_vad_confidence_custom(self) -> None:
-        s = _make_settings(vad_confidence=0.8)
-        assert s.vad_confidence == 0.8
 
 
 class TestEchoSuppressionSettings:

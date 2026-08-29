@@ -17,8 +17,7 @@ class TestPyprojectToml:
         "dependency",
         [
             "pipecat-ai",
-            "deepgram-sdk",
-            "google-generativeai",
+            "google-genai",
             "anthropic",
             "elevenlabs",
             "typer",

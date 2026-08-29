@@ -1,6 +1,6 @@
 project_name: ai-interviewer
 version: 0.1.0
-last_updated: '2026-03-08'
+last_updated: '2026-03-13'
 
 # Classes in your project
 # Claude will update this as code is written
@@ -33,7 +33,7 @@ classes:
     name: Settings
     file_path: src/config.py
     methods: [validate, get_tts_params]
-    attributes: [deepgram_api_key, google_api_key, elevenlabs_api_key, anthropic_api_key, elevenlabs_voice_id, gemini_model, claude_model, deepgram_language, deepgram_model, elevenlabs_tts_model, max_latency_ms, db_path, vad_stop_secs, vad_confidence, elevenlabs_stability, elevenlabs_similarity_boost, elevenlabs_style, elevenlabs_stability_nl, elevenlabs_similarity_boost_nl, elevenlabs_style_nl, echo_similarity_threshold, echo_suppress_window_secs, echo_min_length, echo_trailing_window_secs]
+    attributes: [google_api_key, elevenlabs_api_key, anthropic_api_key, elevenlabs_voice_id, gemini_live_model, claude_model, elevenlabs_tts_model, max_latency_ms, db_path, session_max_minutes, elevenlabs_stability, elevenlabs_similarity_boost, elevenlabs_style, elevenlabs_stability_nl, elevenlabs_similarity_boost_nl, elevenlabs_style_nl, echo_similarity_threshold, echo_suppress_window_secs, echo_min_length, echo_trailing_window_secs]
     bases: []
     docstring: "Application settings loaded from environment variables"
 
@@ -48,10 +48,18 @@ classes:
   InterviewBot:
     name: InterviewBot
     file_path: src/interview/pipecat_bot.py
-    methods: [start_session, run, stop_session, _build_pipeline, _on_user_transcript, _on_assistant_transcript]
+    methods: [start_session, run, stop_session, _build_pipeline, _session_timer, _on_user_transcript, _on_assistant_transcript]
     attributes: [settings, store, _session_id, _pipeline, _task, _transport]
     bases: []
     docstring: "Orchestrates a Pipecat voice pipeline for conducting interviews"
+
+  TranscriptCollector:
+    name: TranscriptCollector
+    file_path: src/interview/pipecat_bot.py
+    methods: [process_frame]
+    attributes: [_on_user_transcript, _on_assistant_transcript, _echo_suppressor, _current_assistant_text, _collecting_assistant]
+    bases: [FrameProcessor]
+    docstring: "Captures TranscriptionFrame (user) and LLMTextFrame (assistant) for persistence"
 
   PersonaAnalyzer:
     name: PersonaAnalyzer

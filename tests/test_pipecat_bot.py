@@ -1,7 +1,7 @@
 """Tests for src.interview.pipecat_bot — InterviewBot class structure and logic."""
 
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -15,7 +15,6 @@ from src.storage.db import SessionStore
 def settings(tmp_path: object) -> Settings:
     """Create a Settings instance with fake API keys for testing."""
     return Settings(
-        deepgram_api_key="fake-deepgram-key",
         google_api_key="fake-google-key",
         elevenlabs_api_key="fake-elevenlabs-key",
         anthropic_api_key="fake-anthropic-key",
@@ -56,9 +55,7 @@ class TestInterviewBotInit:
 class TestSessionIdProperty:
     """Verify session_id property behavior."""
 
-    def test_session_id_is_none_before_start(
-        self, settings: Settings, db_path: str
-    ) -> None:
+    def test_session_id_is_none_before_start(self, settings: Settings, db_path: str) -> None:
         store = SessionStore(db_path)
         bot = InterviewBot(settings=settings, store=store)
         assert bot.session_id is None
@@ -68,9 +65,7 @@ class TestStartSession:
     """Verify start_session creates a session and returns a UUID."""
 
     @pytest.mark.asyncio
-    async def test_returns_uuid_string(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_returns_uuid_string(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
             session_id = await bot.start_session(
@@ -80,9 +75,7 @@ class TestStartSession:
         assert str(parsed) == session_id
 
     @pytest.mark.asyncio
-    async def test_stores_session_id(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_stores_session_id(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
             session_id = await bot.start_session(
@@ -91,9 +84,7 @@ class TestStartSession:
         assert bot.session_id == session_id
 
     @pytest.mark.asyncio
-    async def test_creates_session_in_store(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_creates_session_in_store(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
             session_id = await bot.start_session(
@@ -111,9 +102,7 @@ class TestStartSession:
     ) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline") as mock_build:
-            await bot.start_session(
-                topic="ML basics", context_text="resume text", language="en"
-            )
+            await bot.start_session(topic="ML basics", context_text="resume text", language="en")
         mock_build.assert_called_once_with(
             "ML basics",
             "resume text",
@@ -131,9 +120,7 @@ class TestStartSession:
     ) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
-            session_id = await bot.start_session(
-                topic="General", context_text=None, language="en"
-            )
+            session_id = await bot.start_session(topic="General", context_text=None, language="en")
         assert bot.session_id is not None
         assert session_id == bot.session_id
 
@@ -142,14 +129,10 @@ class TestOnUserTranscript:
     """Verify _on_user_transcript saves to store with role='user'."""
 
     @pytest.mark.asyncio
-    async def test_saves_user_transcript(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_saves_user_transcript(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
-            session_id = await bot.start_session(
-                topic="Testing", context_text=None, language="en"
-            )
+            session_id = await bot.start_session(topic="Testing", context_text=None, language="en")
         await bot._on_user_transcript("Hello, I am the candidate.")
         transcript = await store.get_session_transcript(session_id)
         assert len(transcript) == 1
@@ -162,9 +145,7 @@ class TestOnUserTranscript:
     ) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
-            session_id = await bot.start_session(
-                topic="Multi", context_text=None, language="en"
-            )
+            session_id = await bot.start_session(topic="Multi", context_text=None, language="en")
         await bot._on_user_transcript("First message")
         await bot._on_user_transcript("Second message")
         transcript = await store.get_session_transcript(session_id)
@@ -192,14 +173,10 @@ class TestOnAssistantTranscript:
         assert transcript[0]["content"] == "Welcome to the interview."
 
     @pytest.mark.asyncio
-    async def test_interleaved_transcripts(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_interleaved_transcripts(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
-            session_id = await bot.start_session(
-                topic="Dialog", context_text=None, language="en"
-            )
+            session_id = await bot.start_session(topic="Dialog", context_text=None, language="en")
         await bot._on_assistant_transcript("Tell me about yourself.")
         await bot._on_user_transcript("I have 5 years of experience.")
         await bot._on_assistant_transcript("Great, tell me more.")
@@ -219,23 +196,17 @@ class TestStopSession:
     ) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
-            session_id = await bot.start_session(
-                topic="Ending", context_text=None, language="en"
-            )
+            session_id = await bot.start_session(topic="Ending", context_text=None, language="en")
         await bot.stop_session()
         sessions = await store.list_sessions()
         session = [s for s in sessions if s["id"] == session_id][0]
         assert session["ended_at"] is not None
 
     @pytest.mark.asyncio
-    async def test_sets_session_id_to_none(
-        self, settings: Settings, store: SessionStore
-    ) -> None:
+    async def test_sets_session_id_to_none(self, settings: Settings, store: SessionStore) -> None:
         bot = InterviewBot(settings=settings, store=store)
         with patch.object(bot, "_build_pipeline"):
-            await bot.start_session(
-                topic="Clear", context_text=None, language="en"
-            )
+            await bot.start_session(topic="Clear", context_text=None, language="en")
         assert bot.session_id is not None
         await bot.stop_session()
         assert bot.session_id is None
@@ -372,9 +343,7 @@ class TestBuildGreeting:
 class TestEchoSuppressorWiring:
     """Verify EchoSuppressor is created with settings values."""
 
-    def test_echo_suppressor_created_with_settings(
-        self, settings: Settings
-    ) -> None:
+    def test_echo_suppressor_created_with_settings(self, settings: Settings) -> None:
         """EchoSuppressor should use echo settings from config."""
         es = EchoSuppressor(
             threshold=settings.echo_similarity_threshold,
